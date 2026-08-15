@@ -4,8 +4,13 @@ A mobile-first, browser-based real-time strategy game. Open a URL, start a
 match, gather resources, build a settlement, raise an army, and destroy the
 enemy Town Center. No installation, no account, no backend.
 
+**Play it: <https://ismailsunni.github.io/pocket-empire/>**
+
 Implements [`pocket-empires-prd.md`](./pocket-empires-prd.md) (v0.2). Section
 references throughout the code point back at it.
+
+Every push to `main` runs lint and the simulation tests, then deploys to
+GitHub Pages — a broken simulation cannot reach the live URL.
 
 ## Running it
 
