@@ -11,9 +11,14 @@
   },
   "population": {
     "hardCap": 50,
-    "startingCap": 0
+    "startingCap": 5
   },
-  "startingResources": { "food": 220, "wood": 220, "gold": 100, "stone": 100 },
+  "startingResources": {
+    "food": 220,
+    "wood": 220,
+    "gold": 100,
+    "stone": 100
+  },
   "startingVillagers": 5,
   "unitCap": 100,
   "carryCapacity": 10,
