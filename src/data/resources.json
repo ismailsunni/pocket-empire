@@ -1,0 +1,5 @@
+{
+  "gatherRates": { "food": 0.55, "wood": 0.5, "gold": 0.45, "stone": 0.4 },
+  "nodeAmounts": { "food": 175, "wood": 120, "gold": 500, "stone": 400 },
+  "nodeYieldPerTile": { "food": 1, "wood": 1, "gold": 1, "stone": 1 }
+}

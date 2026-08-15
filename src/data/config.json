@@ -1,0 +1,27 @@
+{
+  "version": 1,
+  "tickRate": 20,
+  "combatTickInterval": 2,
+  "aiTickInterval": 10,
+  "pathBudgetPerTick": 4,
+  "map": {
+    "size": 96,
+    "startClearance": 6,
+    "maxGenerationAttempts": 40
+  },
+  "population": {
+    "hardCap": 50,
+    "startingCap": 0
+  },
+  "startingResources": { "food": 220, "wood": 220, "gold": 100, "stone": 100 },
+  "startingVillagers": 5,
+  "unitCap": 100,
+  "carryCapacity": 10,
+  "autoRetaskRadius": 14,
+  "cancelRefundRatio": 0.6,
+  "multiBuilderExponent": 0.6,
+  "separationRadius": 0.7,
+  "aggroRadius": 7,
+  "reacquireRadius": 5,
+  "villagerFleeRadius": 6
+}

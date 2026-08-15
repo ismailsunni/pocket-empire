@@ -1,0 +1,66 @@
+{
+  "townCenter": {
+    "name": "Town Center",
+    "hp": 1200,
+    "size": 3,
+    "vision": 10,
+    "buildTime": 60,
+    "cost": { "wood": 275 },
+    "popProvided": 5,
+    "dropOff": true,
+    "produces": ["villager"],
+    "age": "dark"
+  },
+  "house": {
+    "name": "House",
+    "hp": 400,
+    "size": 2,
+    "vision": 4,
+    "buildTime": 18,
+    "cost": { "wood": 25 },
+    "popProvided": 5,
+    "age": "dark"
+  },
+  "farm": {
+    "name": "Farm",
+    "hp": 180,
+    "size": 2,
+    "vision": 3,
+    "buildTime": 14,
+    "cost": { "wood": 60 },
+    "farmFood": 320,
+    "age": "dark"
+  },
+  "barracks": {
+    "name": "Barracks",
+    "hp": 800,
+    "size": 3,
+    "vision": 6,
+    "buildTime": 40,
+    "cost": { "wood": 150 },
+    "produces": ["spearman"],
+    "age": "dark"
+  },
+  "archeryRange": {
+    "name": "Archery Range",
+    "hp": 800,
+    "size": 3,
+    "vision": 6,
+    "buildTime": 40,
+    "cost": { "wood": 175 },
+    "produces": ["archer"],
+    "age": "feudal"
+  },
+  "tower": {
+    "name": "Tower",
+    "hp": 850,
+    "size": 2,
+    "vision": 9,
+    "buildTime": 30,
+    "cost": { "stone": 125, "wood": 25 },
+    "attack": 7,
+    "range": 7,
+    "cooldown": 2,
+    "age": "feudal"
+  }
+}

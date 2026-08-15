@@ -1,0 +1,17 @@
+[
+  {
+    "id": "dark",
+    "name": "Dark Age",
+    "numeral": "I",
+    "cost": {},
+    "researchTime": 0
+  },
+  {
+    "id": "feudal",
+    "name": "Feudal Age",
+    "numeral": "II",
+    "cost": { "food": 400 },
+    "researchTime": 60,
+    "researchedAt": "townCenter"
+  }
+]

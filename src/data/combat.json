@@ -1,0 +1,11 @@
+{
+  "minimumDamage": 1,
+  "comment": "attacker class -> target class -> multiplier. Cavalry rows are pre-wired so restoring the counter triangle post-MVP (§10.1) is a data change.",
+  "bonus": {
+    "infantry": { "cavalry": 2 },
+    "archer": { "infantry": 1.5 },
+    "cavalry": { "archer": 2, "villager": 1.5 },
+    "tower": { "infantry": 1.25 }
+  },
+  "buildingArmor": 2
+}

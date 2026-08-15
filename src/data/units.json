@@ -1,0 +1,44 @@
+{
+  "villager": {
+    "name": "Villager",
+    "class": "villager",
+    "hp": 28,
+    "attack": 2,
+    "armor": 0,
+    "range": 0.7,
+    "speed": 1.6,
+    "cooldown": 1.5,
+    "vision": 6,
+    "trainTime": 12,
+    "pop": 1,
+    "cost": { "food": 50 }
+  },
+  "spearman": {
+    "name": "Spearman",
+    "class": "infantry",
+    "hp": 48,
+    "attack": 5,
+    "armor": 1,
+    "range": 0.8,
+    "speed": 1.9,
+    "cooldown": 1.4,
+    "vision": 7,
+    "trainTime": 14,
+    "pop": 1,
+    "cost": { "food": 35, "wood": 20 }
+  },
+  "archer": {
+    "name": "Archer",
+    "class": "archer",
+    "hp": 34,
+    "attack": 5,
+    "armor": 0,
+    "range": 5,
+    "speed": 2.1,
+    "cooldown": 1.7,
+    "vision": 9,
+    "trainTime": 18,
+    "pop": 1,
+    "cost": { "wood": 25, "gold": 40 }
+  }
+}
