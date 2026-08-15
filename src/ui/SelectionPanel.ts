@@ -1,4 +1,4 @@
-import { AGES, TECHS, UNITS } from '../data'
+import { AGES, TECHS, UNITS, type Cost } from '../data'
 import { buildingDef, canAfford, isUnlocked, unitDef } from '../simulation/GameState'
 import type { EntityId, GameState } from '../simulation/types'
 import type { Selection } from '../input/Selection'
@@ -14,13 +14,28 @@ export interface SelectionHandlers {
   onStop: () => void
 }
 
-/** Collapses when nothing is selected so the world is not obscured (§17). */
+interface CostedButton {
+  node: HTMLButtonElement
+  cost: Cost
+  needsPopulation: boolean
+}
+
+/**
+ * Collapses when nothing is selected so the world is not obscured (§17).
+ *
+ * The DOM is rebuilt only when the panel's shape changes. Rebuilding it on
+ * every refresh detaches buttons mid-tap, which loses the tap.
+ */
 export class SelectionPanel {
   private readonly root: HTMLElement
   private readonly title: HTMLElement
   private readonly actions: HTMLElement
   private readonly queue: HTMLElement
   readonly buildMenu: BuildMenu
+  private shape = ''
+  private shownBuilding: EntityId | null = null
+  private costed: CostedButton[] = []
+  private fills: HTMLElement[] = []
 
   constructor(
     parent: HTMLElement,
@@ -34,39 +49,84 @@ export class SelectionPanel {
     this.queue = el('div', 'queue', this.root)
   }
 
-  refresh(state: GameState, selection: Selection, player: number): void {
+  refresh(state: GameState, selection: Selection, playerId: number): void {
     const empty = selection.isEmpty
     this.root.hidden = empty
     if (empty) {
       this.buildMenu.close()
+      this.shape = ''
       return
     }
 
-    this.actions.innerHTML = ''
-    this.queue.innerHTML = ''
+    const player = state.players[playerId]
+    const building = selection.buildingId === null ? null : state.buildings.get(selection.buildingId)
+    const shape = [
+      selection.buildingId,
+      building?.type,
+      building?.complete,
+      building?.queue.map((item) => `${item.kind}:${item.id}`).join(','),
+      [...selection.units].sort((a, b) => a - b).join(','),
+      this.buildMenu.open,
+      player.ageIndex,
+      player.techs.length,
+    ].join('|')
 
-    if (selection.buildingId !== null) {
-      this.renderBuilding(state, selection.buildingId, player)
-    } else {
-      this.renderUnits(state, selection, player)
+    if (shape !== this.shape) {
+      this.shape = shape
+      this.shownBuilding = selection.buildingId
+      this.rebuild(state, selection, playerId)
     }
-    this.buildMenu.refresh(state.players[player])
+    this.updateDynamic(state, playerId)
   }
 
-  private renderUnits(state: GameState, selection: Selection, player: number): void {
+  private rebuild(state: GameState, selection: Selection, playerId: number): void {
+    this.actions.innerHTML = ''
+    this.queue.innerHTML = ''
+    this.costed = []
+    this.fills = []
+
+    if (selection.buildingId !== null) this.renderBuilding(state, selection.buildingId, playerId)
+    else this.renderUnits(state, selection, playerId)
+    this.buildMenu.refresh(state.players[playerId], this.costed)
+  }
+
+  /** Cheap per-frame work: affordability and production progress only. */
+  private updateDynamic(state: GameState, playerId: number): void {
+    const player = state.players[playerId]
+    for (const item of this.costed) {
+      item.node.disabled =
+        !canAfford(player, item.cost) || (item.needsPopulation && player.popUsed >= player.popCap)
+    }
+    if (this.shownBuilding === null) return
+    const building = state.buildings.get(this.shownBuilding)
+    if (!building) return
+    building.queue.forEach((item, index) => {
+      const fill = this.fills[index]
+      if (fill) fill.style.width = `${((item.total - item.remaining) / item.total) * 100}%`
+    })
+    if (!building.complete) {
+      const def = buildingDef(building.type)
+      const progress = Math.floor((building.buildProgress / (def.buildTime * 20)) * 100)
+      this.title.textContent = `${def.name} (building ${progress}%)`
+    }
+  }
+
+  private renderUnits(state: GameState, selection: Selection, playerId: number): void {
     const counts = new Map<string, number>()
     for (const id of selection.units) {
       const unit = state.units.get(id)
       if (unit) counts.set(unit.type, (counts.get(unit.type) ?? 0) + 1)
     }
     this.title.textContent =
-      [...counts.entries()].map(([type, count]) => `${count} ${UNITS[type].name}`).join(', ') ||
+      [...counts.entries()]
+        .map(([type, count]) => `${count} ${UNITS[type].name}${count === 1 ? '' : 's'}`)
+        .join(', ') ||
       'Nothing selected'
 
     if (selection.villagers(state).length > 0) {
       const toggle = button('Build', this.actions, () => {
         this.buildMenu.toggle()
-        this.buildMenu.refresh(state.players[player])
+        this.refresh(state, selection, playerId)
       })
       toggle.classList.toggle('primary', this.buildMenu.open)
     }
@@ -78,9 +138,7 @@ export class SelectionPanel {
     if (!building) return
     const def = buildingDef(building.type)
     const player = state.players[playerId]
-    this.title.textContent = building.complete
-      ? `${def.name} — ${Math.ceil(building.hp)}/${def.hp} HP`
-      : `${def.name} (building ${Math.floor((building.buildProgress / (def.buildTime * 20)) * 100)}%)`
+    this.title.textContent = `${def.name} — ${Math.ceil(building.hp)}/${def.hp} HP`
 
     if (building.owner !== playerId || !building.complete) return
 
@@ -91,7 +149,7 @@ export class SelectionPanel {
         this.actions,
         () => this.handlers.onTrain(building.id, unitType),
       )
-      node.disabled = !canAfford(player, unitData.cost) || player.popUsed >= player.popCap
+      this.costed.push({ node, cost: unitData.cost, needsPopulation: true })
     }
 
     const nextAge = AGES[player.ageIndex + 1]
@@ -101,8 +159,8 @@ export class SelectionPanel {
         this.actions,
         () => this.handlers.onAdvanceAge(building.id),
       )
-      node.disabled = !canAfford(player, nextAge.cost)
       node.classList.add('primary')
+      this.costed.push({ node, cost: nextAge.cost, needsPopulation: false })
     }
 
     for (const [techId, tech] of Object.entries(TECHS)) {
@@ -113,13 +171,12 @@ export class SelectionPanel {
         this.actions,
         () => this.handlers.onResearch(building.id, techId),
       )
-      node.disabled = !canAfford(player, tech.cost)
+      this.costed.push({ node, cost: tech.cost, needsPopulation: false })
     }
 
     building.queue.forEach((item, index) => {
       const slot = el('button', 'slot', this.queue)
-      const fill = el('div', 'fill', slot)
-      fill.style.width = `${((item.total - item.remaining) / item.total) * 100}%`
+      this.fills.push(el('div', 'fill', slot))
       const label = el('span', undefined, slot)
       label.textContent =
         item.kind === 'unit'

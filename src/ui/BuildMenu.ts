@@ -1,6 +1,6 @@
 import { BUILDINGS, RESOURCE_KINDS, type Cost } from '../data'
 import { RESOURCE_ICONS } from '../rendering/theme'
-import { canAfford, isUnlocked } from '../simulation/GameState'
+import { isUnlocked } from '../simulation/GameState'
 import type { Player } from '../simulation/types'
 import { button, el } from './dom'
 
@@ -29,7 +29,11 @@ export class BuildMenu {
     this.open = false
   }
 
-  refresh(player: Player): void {
+  /** Buttons are registered with the panel so affordability updates without a rebuild. */
+  refresh(
+    player: Player,
+    costed: { node: HTMLButtonElement; cost: Cost; needsPopulation: boolean }[],
+  ): void {
     this.root.innerHTML = ''
     if (!this.open) return
     for (const [type, def] of Object.entries(BUILDINGS)) {
@@ -39,7 +43,7 @@ export class BuildMenu {
         this.root,
         () => this.onPick(type),
       )
-      node.disabled = !canAfford(player, def.cost)
+      costed.push({ node, cost: def.cost, needsPopulation: false })
     }
   }
 }

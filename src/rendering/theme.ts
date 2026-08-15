@@ -19,7 +19,9 @@ export const PLAYER_COLORS = [0x4aa3ff, 0xe4574a]
 
 export const NODE_COLORS: Record<ResourceKind, number> = {
   wood: 0x2f5d2a,
-  food: 0xc0392b,
+  // Deliberately not red: the enemy player is red, and berry bushes read as
+  // enemy units at a glance on a small screen.
+  food: 0xd2679a,
   gold: 0xd4af37,
   stone: 0x9aa0a6,
 }
