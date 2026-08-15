@@ -1,7 +1,11 @@
 import { describe, expect, it } from 'vitest'
+import { AGES, BUILDINGS } from '../data'
 import { generateMap } from '../map/MapGenerator'
 import { isWalkable, NEIGHBORS, idx } from '../map/Tile'
+import { computeDamage } from './Combat'
+import { checkPlacement } from './Construction'
 import { Game } from './Game'
+import { isUnlocked } from './GameState'
 import { distance } from './Movement'
 import { ENEMY, HUMAN, type GameState } from './types'
 
@@ -113,5 +117,111 @@ describe('victory conditions', () => {
     runTicks(game, 4)
     expect(game.state.status).toBe('over')
     expect(game.state.winner).toBe(HUMAN)
+  })
+})
+
+describe('construction (§9.1)', () => {
+  it('consumes resources at placement, completes, and raises the population cap', () => {
+    const game = new Game(31337)
+    const player = game.state.players[HUMAN]
+    const woodBefore = player.resources.wood
+    const capBefore = player.popCap
+    const villagers = [...game.state.units.values()].filter((unit) => unit.owner === HUMAN)
+    const tc = [...game.state.buildings.values()].find((b) => b.owner === HUMAN)!
+    // Placement requires explored terrain, so let the first fog pass run.
+    game.tick()
+
+    let placed = false
+    for (let r = 4; r < 12 && !placed; r++) {
+      for (let a = 0; a < 12 && !placed; a++) {
+        const tx = Math.round(tc.tx + Math.cos((a / 12) * Math.PI * 2) * r)
+        const ty = Math.round(tc.ty + Math.sin((a / 12) * Math.PI * 2) * r)
+        if (checkPlacement(game.state, player, 'house', tx, ty) !== 'ok') continue
+        game.queue.push({
+          kind: 'place',
+          player: HUMAN,
+          units: villagers.map((unit) => unit.id),
+          building: 'house',
+          tx,
+          ty,
+        })
+        placed = true
+      }
+    }
+    expect(placed).toBe(true)
+
+    game.tick()
+    expect(player.resources.wood).toBe(woodBefore - BUILDINGS.house.cost.wood!)
+
+    runTicks(game, 1200)
+    const house = [...game.state.buildings.values()].find((b) => b.type === 'house')
+    expect(house?.complete).toBe(true)
+    expect(player.popCap).toBe(capBefore + BUILDINGS.house.popProvided!)
+  })
+})
+
+describe('combat (§12)', () => {
+  it('applies the class bonus table and never deals less than one damage', () => {
+    const spearman = { x: 0, y: 0, radius: 0.4, owner: 1, klass: 'infantry', armor: 1 }
+    const cavalry = { ...spearman, klass: 'cavalry' }
+    // Archers beat infantry; the same attack is far weaker against armour alone.
+    expect(computeDamage('archer', 5, spearman)).toBe(Math.round(5 * 1.5) - 1)
+    expect(computeDamage('infantry', 5, cavalry)).toBe(10 - 1)
+    expect(computeDamage('villager', 1, { ...spearman, armor: 99 })).toBe(1)
+  })
+})
+
+describe('ages (§11)', () => {
+  it('advances to Feudal from the town center and unlocks its buildings', () => {
+    const game = new Game(5150)
+    const player = game.state.players[HUMAN]
+    const tc = [...game.state.buildings.values()].find(
+      (b) => b.owner === HUMAN && b.type === 'townCenter',
+    )!
+    expect(isUnlocked(player, 'feudal')).toBe(false)
+
+    player.resources.food = 1000
+    game.queue.push({ kind: 'advanceAge', player: HUMAN, buildingId: tc.id })
+    runTicks(game, Math.round(AGES[1].researchTime * 20) + 5)
+
+    expect(player.ageIndex).toBe(1)
+    expect(isUnlocked(player, 'feudal')).toBe(true)
+  })
+})
+
+describe('the AI opponent (§15)', () => {
+  it('builds an economy, raises an army, and wins against a passive player', () => {
+    const game = new Game(20260815)
+    let peakArmy = 0
+    let ticks = 0
+    for (; ticks < 40_000 && game.state.status === 'playing'; ticks++) {
+      game.tick()
+      const army = [...game.state.units.values()].filter(
+        (unit) => unit.owner === ENEMY && unit.type !== 'villager',
+      ).length
+      if (army > peakArmy) peakArmy = army
+    }
+    const ai = game.state.players[ENEMY]
+    expect([...game.state.units.values()].filter((u) => u.owner === ENEMY).length).toBeGreaterThan(12)
+    expect(peakArmy).toBeGreaterThanOrEqual(8)
+    expect(game.state.status).toBe('over')
+    expect(game.state.winner).toBe(ENEMY)
+    // A 10-30 minute match at 20 Hz (§24.2); a passive opponent is the fast end.
+    expect(ticks).toBeGreaterThan(20 * 60 * 5)
+    expect(ticks).toBeLessThan(20 * 60 * 30)
+    expect(ai.defeated).toBe(false)
+  })
+})
+
+describe('serializability (§19.2 Rule 5)', () => {
+  it('structuredClone round-trips the state and the clone keeps simulating', () => {
+    const game = new Game(2024)
+    runTicks(game, 100)
+    const clone = structuredClone(game.state)
+    const resumed = new Game(clone.seed, clone)
+    runTicks(resumed, 100)
+    runTicks(game, 100)
+    expect(resumed.state.tick).toBe(game.state.tick)
+    expect(resumed.state.units.size).toBe(game.state.units.size)
   })
 })
