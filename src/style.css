@@ -1,0 +1,319 @@
+:root {
+  --panel: rgba(18, 24, 18, 0.88);
+  --panel-solid: #161d16;
+  --edge: rgba(255, 255, 255, 0.14);
+  --text: #eef3ea;
+  --muted: #a9b6a4;
+  --accent: #d8b25a;
+  --danger: #d9714f;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html,
+body {
+  margin: 0;
+  height: 100%;
+  overflow: hidden;
+  background: #0d120d;
+  color: var(--text);
+  font-family: system-ui, -apple-system, 'Segoe UI', sans-serif;
+  -webkit-user-select: none;
+  user-select: none;
+  -webkit-tap-highlight-color: transparent;
+  overscroll-behavior: none;
+}
+
+#app {
+  position: fixed;
+  inset: 0;
+}
+
+#game canvas {
+  display: block;
+  touch-action: none;
+}
+
+#ui {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+}
+
+#ui button,
+#ui .clickable {
+  pointer-events: auto;
+}
+
+button {
+  font: inherit;
+  color: var(--text);
+  background: var(--panel);
+  border: 1px solid var(--edge);
+  border-radius: 8px;
+  padding: 10px 14px;
+  min-height: 44px;
+  min-width: 44px;
+  cursor: pointer;
+}
+
+button:disabled {
+  opacity: 0.4;
+  cursor: default;
+}
+
+button.primary {
+  background: var(--accent);
+  color: #221a06;
+  border-color: transparent;
+  font-weight: 600;
+}
+
+/* --- top bar ----------------------------------------------------------- */
+
+.topbar {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 6px 12px;
+  padding-top: max(6px, env(safe-area-inset-top));
+  background: var(--panel);
+  border-bottom: 1px solid var(--edge);
+  font-variant-numeric: tabular-nums;
+  font-size: 15px;
+}
+
+.topbar .res {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+}
+
+.topbar .spacer {
+  flex: 1;
+}
+
+.topbar .pop.capped {
+  color: #ffb4a2;
+  font-weight: 600;
+}
+
+/* --- side controls ----------------------------------------------------- */
+
+.sidebar {
+  position: absolute;
+  left: 8px;
+  top: 25%;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.sidebar button {
+  padding: 8px;
+  font-size: 13px;
+  text-align: left;
+}
+
+.badge {
+  display: inline-block;
+  min-width: 20px;
+  padding: 0 5px;
+  margin-left: 6px;
+  border-radius: 10px;
+  background: var(--accent);
+  color: #221a06;
+  font-weight: 700;
+  text-align: center;
+}
+
+/* --- selection panel --------------------------------------------------- */
+
+.selection {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  padding: 8px 12px;
+  padding-bottom: max(8px, env(safe-area-inset-bottom));
+  background: var(--panel);
+  border-top: 1px solid var(--edge);
+}
+
+.selection[hidden] {
+  display: none;
+}
+
+.selection h2 {
+  margin: 0 0 6px;
+  font-size: 14px;
+  font-weight: 600;
+}
+
+.selection .actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.selection .actions button {
+  padding: 8px 10px;
+  font-size: 13px;
+  line-height: 1.15;
+}
+
+.selection .cost {
+  display: block;
+  font-size: 11px;
+  color: var(--muted);
+}
+
+.queue {
+  display: flex;
+  gap: 4px;
+  margin-top: 6px;
+}
+
+.queue .slot {
+  position: relative;
+  width: 46px;
+  height: 26px;
+  border: 1px solid var(--edge);
+  border-radius: 5px;
+  font-size: 10px;
+  overflow: hidden;
+  background: #0e140e;
+  padding: 0;
+  min-height: 0;
+  min-width: 0;
+}
+
+.queue .slot .fill {
+  position: absolute;
+  inset: 0 auto 0 0;
+  background: rgba(216, 178, 90, 0.35);
+}
+
+.queue .slot span {
+  position: relative;
+}
+
+/* --- minimap ----------------------------------------------------------- */
+
+.minimap {
+  position: absolute;
+  right: 8px;
+  bottom: 8px;
+  bottom: max(8px, env(safe-area-inset-bottom));
+  width: 150px;
+  height: 150px;
+  border: 1px solid var(--edge);
+  border-radius: 6px;
+  background: #0b0f0b;
+  overflow: hidden;
+}
+
+.minimap canvas {
+  display: block;
+  width: 100%;
+  height: 100%;
+  image-rendering: pixelated;
+}
+
+/* --- notifications ----------------------------------------------------- */
+
+.notifications {
+  position: absolute;
+  top: 44px;
+  left: 50%;
+  transform: translateX(-50%);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+}
+
+.notifications div {
+  padding: 5px 12px;
+  border-radius: 14px;
+  background: rgba(30, 38, 30, 0.92);
+  border: 1px solid var(--edge);
+  font-size: 13px;
+  animation: fade 4s forwards;
+}
+
+@keyframes fade {
+  0%,
+  70% {
+    opacity: 1;
+  }
+  100% {
+    opacity: 0;
+  }
+}
+
+/* --- screens ----------------------------------------------------------- */
+
+.screen {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 14px;
+  background: rgba(10, 14, 10, 0.92);
+  pointer-events: auto;
+  text-align: center;
+  padding: 20px;
+}
+
+.screen[hidden] {
+  display: none;
+}
+
+.screen h1 {
+  margin: 0;
+  font-size: 30px;
+  letter-spacing: 0.04em;
+}
+
+.screen p {
+  margin: 0;
+  color: var(--muted);
+  max-width: 34rem;
+  line-height: 1.5;
+}
+
+.screen .row {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+  justify-content: center;
+}
+
+#rotate-prompt {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: #0d120d;
+  z-index: 20;
+  text-align: center;
+}
+
+#rotate-prompt[hidden] {
+  display: none;
+}
+
+#rotate-prompt .sub {
+  color: var(--muted);
+  font-size: 14px;
+}
