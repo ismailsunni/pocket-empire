@@ -1,5 +1,5 @@
 import { CONFIG, type Cost } from '../data'
-import { idx, inBounds } from '../map/Tile'
+import { idx, inBounds, nearestWalkable } from '../map/Tile'
 import {
   addBuilding,
   buildingCenter,
@@ -61,19 +61,21 @@ export const placeBuilding = (
   const building = addBuilding(state, player.id, type, tx, ty, false)
   pushUnitsOutOfFootprint(state, tx, ty, def.size)
   state.mapDirty = true
-  for (const builder of builders) assignBuilder(builder, building)
+  for (const builder of builders) assignBuilder(state, builder, building)
   return building
 }
 
-export const assignBuilder = (unit: Unit, building: Building): void => {
+export const assignBuilder = (state: GameState, unit: Unit, building: Building): void => {
   unit.order = { kind: 'build', buildingId: building.id }
   const center = buildingCenter(building)
   const angle = ((unit.id % 8) / 8) * Math.PI * 2
-  setDestination(
-    unit,
-    center.x + Math.cos(angle) * (building.size / 2 + 0.9),
-    center.y + Math.sin(angle) * (building.size / 2 + 0.9),
-  )
+  const x = center.x + Math.cos(angle) * (building.size / 2 + 0.9)
+  const y = center.y + Math.sin(angle) * (building.size / 2 + 0.9)
+  // Snap to a walkable tile: a destination inside the footprint can never be
+  // reached, and the unit would abandon the order as unreachable.
+  const spot = nearestWalkable(state.map, Math.floor(x), Math.floor(y))
+  if (spot) setDestination(unit, spot[0] + 0.5, spot[1] + 0.5)
+  else setDestination(unit, x, y)
 }
 
 export const cancelBuilding = (state: GameState, building: Building): void => {
@@ -108,7 +110,7 @@ export const updateConstruction = (state: GameState): void => {
     const center = buildingCenter(building)
     if (distance(unit.x, unit.y, center.x, center.y) > building.size / 2 + BUILD_REACH) {
       if (unit.state === 'moving' && !arrived(unit)) continue
-      assignBuilder(unit, building)
+      assignBuilder(state, unit, building)
       continue
     }
     unit.state = 'building'

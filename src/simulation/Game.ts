@@ -9,8 +9,7 @@ import { assignBuilder, cancelBuilding, placeBuilding, updateConstruction } from
 import { updateEconomy, updateStragglers } from './Economy'
 import { FOG_INTERVAL, updateFog } from './Fog'
 import { createGameState, unitDef } from './GameState'
-import { setDestination } from './Movement'
-import { updateMovement } from './Movement'
+import { setDestination, updateMovement } from './Movement'
 import { advanceAge, cancelQueueItem, researchTech, trainUnit, updateProduction } from './Production'
 import { HUMAN, type GameState, type Unit } from './types'
 
@@ -29,8 +28,8 @@ export class Game {
   private accumulator = 0
   private readonly step = 1 / CONFIG.tickRate
 
-  constructor(seed: number) {
-    this.state = createGameState(seed)
+  constructor(seed: number, restored?: GameState) {
+    this.state = restored ?? createGameState(seed)
     this.path = new PathService(this.state.map)
     this.grid = new SpatialGrid(this.state.map.size)
     resetCombatNotifications()
@@ -156,7 +155,7 @@ export class Game {
         const building = state.buildings.get(command.buildingId)
         if (!building || building.owner !== command.player || building.complete) break
         for (const unit of this.ownedUnits(command.player, command.units)) {
-          if (unitDef(unit.type).class === 'villager') assignBuilder(unit, building)
+          if (unitDef(unit.type).class === 'villager') assignBuilder(state, unit, building)
         }
         break
       }

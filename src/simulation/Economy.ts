@@ -1,10 +1,12 @@
 import { CONFIG } from '../data'
-import { nearestWalkable } from '../map/Tile'
+import { NEIGHBORS, isWalkable, nearestWalkable } from '../map/Tile'
 import { buildingCenter, buildingDef, carryCapacity, gatherRate, removeNode } from './GameState'
 import { arrived, distance, setDestination } from './Movement'
 import type { Building, EntityId, GameState, ResourceNode, Unit } from './types'
 
-const GATHER_REACH = 1.6
+// Generous enough that neighbours pushing each other apart cannot leave a
+// villager permanently one step short of its node.
+const GATHER_REACH = 2.2
 
 export const nodeCenter = (node: ResourceNode): { x: number; y: number } => ({
   x: node.tx + 0.5,
@@ -34,15 +36,38 @@ export const findNearestNode = (
   y: number,
   kind: string,
   radius: number,
+  accept?: (node: ResourceNode) => boolean,
 ): ResourceNode | null => {
   let best: ResourceNode | null = null
   let bestDistance = radius
   for (const node of state.nodes.values()) {
     if (node.kind !== kind) continue
+    if (accept && !accept(node)) continue
     const d = distance(x, y, node.tx + 0.5, node.ty + 0.5)
     if (d < bestDistance) {
       bestDistance = d
       best = node
+    }
+  }
+  return best
+}
+
+/**
+ * Resource tiles block movement, so a gatherer stands on a neighbouring tile.
+ * Picking the nearest walkable tile to the node instead can land the villager
+ * outside gathering reach, where it re-walks to the same spot forever.
+ */
+const standingSpot = (state: GameState, node: ResourceNode, from: Unit): [number, number] | null => {
+  let best: [number, number] | null = null
+  let bestDistance = Infinity
+  for (const [dx, dy] of NEIGHBORS) {
+    const tx = node.tx + dx
+    const ty = node.ty + dy
+    if (!isWalkable(state.map, tx, ty)) continue
+    const d = distance(from.x, from.y, tx + 0.5, ty + 0.5)
+    if (d < bestDistance) {
+      bestDistance = d
+      best = [tx, ty]
     }
   }
   return best
@@ -98,7 +123,18 @@ export const updateEconomy = (state: GameState, dt: number): void => {
     const center = nodeCenter(node)
     if (distance(unit.x, unit.y, center.x, center.y) > GATHER_REACH) {
       if (unit.state === 'moving' && !arrived(unit)) continue
-      walkTo(state, unit, center.x, center.y, false)
+      const spot = standingSpot(state, node, unit)
+      if (!spot) {
+        // Fully enclosed node: nothing can ever reach it.
+        retask(state, unit, findNearestNode(state, unit.x, unit.y, node.kind, CONFIG.autoRetaskRadius))
+        continue
+      }
+      if (arrived(unit) && Math.floor(unit.destX) === spot[0] && Math.floor(unit.destY) === spot[1]) {
+        // Standing where we meant to and still out of reach: give up on this node.
+        retask(state, unit, findNearestNode(state, unit.x, unit.y, node.kind, CONFIG.autoRetaskRadius))
+        continue
+      }
+      setDestination(unit, spot[0] + 0.5, spot[1] + 0.5)
       continue
     }
 
@@ -140,8 +176,12 @@ const retask = (state: GameState, unit: Unit, node: ResourceNode | null): void =
     return
   }
   unit.order = { kind: 'gather', nodeId: target.id }
-  const center = nodeCenter(target)
-  walkTo(state, unit, center.x, center.y, false)
+  const spot = standingSpot(state, target, unit)
+  if (spot) setDestination(unit, spot[0] + 0.5, spot[1] + 0.5)
+  else {
+    const center = nodeCenter(target)
+    walkTo(state, unit, center.x, center.y, false)
+  }
 }
 
 const findFallback = (state: GameState, unit: Unit): ResourceNode | null => {

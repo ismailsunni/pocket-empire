@@ -105,11 +105,15 @@ export const updateMovement = (
 
     if (Math.abs(unit.x + unit.y - before) < step * 0.15) {
       unit.stuck++
-      // Unreachable destination: stop as close as possible (§19.3).
+      // Unreachable destination: stop as close as possible (§19.3). Gather and
+      // build orders survive so their system can retry from where the unit
+      // ended up; a bare move order is simply abandoned.
       if (unit.stuck > STUCK_TICKS) {
         unit.state = 'idle'
-        unit.order = { kind: 'none' }
         unit.stuck = 0
+        if (unit.order.kind === 'move' || unit.order.kind === 'attackMove') {
+          unit.order = { kind: 'none' }
+        }
       }
     } else {
       unit.stuck = 0
